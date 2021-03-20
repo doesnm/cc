@@ -12,7 +12,7 @@ class ClassClient extends Client{
     })
     
     this.on("message", message => {
-      let prefix = this.prefix()
+      let prefix = this.prefix(message)
       this.commands.forEach(c => {
         let cmd = message.content.slice(prefix.length)
         if(cmd == c.name || c.aliases.includes(cmd)){
