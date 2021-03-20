@@ -14,6 +14,7 @@ class ClassClient extends Client{
     this.on("message", message => {
       let prefix = this.prefix(message)
       this.commands.forEach(c => {
+        if(!message.content.startsWith(prefix)) return;
         let cmd = message.content.slice(prefix.length).split(" ")[0]
         if(cmd == c.name || c.aliases.includes(cmd)){
           c.run(this,message)
