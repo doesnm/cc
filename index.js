@@ -30,6 +30,7 @@ class ClassClient extends Client{
     cmd.description = command.description || "Описание не задано"
     cmd.aliases = command.aliases || []
     cmd.run = command.run
+    cmd.category = command.category
     this.commands.set(cmd.name,cmd)
     console.log("CC | Command " + cmd.name + " is loaded")
   }
