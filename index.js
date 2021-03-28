@@ -14,7 +14,10 @@ class ClassClient extends Client{
     
     this.on("message", message => {
       if(message.channel.type == "dm") return;
-      //if(blacklist(message).includes(message.author.id)) return;
+      
+      if(this.blacklist){
+        if(this.blacklist(message).includes(message.author.id)) return;
+      }
       let prefix = this.prefix(message)
       if(!message.content.startsWith(prefix)) return;
       let cmd = message.content.slice(prefix.length).split(" ")[0]
