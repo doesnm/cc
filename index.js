@@ -6,7 +6,9 @@ class ClassClient extends Client{
     if(!token) throw "Token?"
     this.commands = new Collection()
     this.prefix = prefix || "cc."
-    this.blacklist = blacklist || m => [];
+    this.blacklist = blacklist || message => {
+      return [];
+    }
     this.login(token)
     this.on("ready", r => {
       console.log("CC | Client " + this.user.tag + " is ready!")
