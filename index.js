@@ -6,7 +6,6 @@ class ClassClient extends Client{
     if(!token) throw "Token?"
     this.commands = new Collection()
     this.prefix = prefix || "cc."
-    this.blacklist = blacklist;
     this.login(token)
     this.on("ready", r => {
       console.log("CC | Client " + this.user.tag + " is ready!")
@@ -14,7 +13,11 @@ class ClassClient extends Client{
     
     this.on("message", message => {
       if(message.channel.type == "dm") return;
-      //if(blacklist(message).includes(message.author.id)) return;
+      
+      if(bot.blacklist){
+        if(bot.blacklist(message).includes(message.author.id)) return;
+      }
+      
       let prefix = this.prefix(message)
       this.commands.forEach(c => {
         if(!message.content.startsWith(prefix)) return;
