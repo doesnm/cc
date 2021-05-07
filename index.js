@@ -1,47 +1,83 @@
-const { Client, Collection} = require("discord.js")
-class ClassClient extends Client{
-  constructor(client_options,{token,prefix,blacklist}){
-    super(client_options)
-    
-    if(!token) throw "Token?"
+const { Client, User, Team, Collection} = require("discord.js")
+module.exports = class extends Client {
+  constructor(options){
+    super(options)
+    this.ownerID = []
     this.commands = new Collection()
-    this.prefix = prefix || "cc."
-    this.login(token)
-    this.on("ready", r => {
-      console.log("CC | Client " + this.user.tag + " is ready!")
-    })
-    
-    this.on("message", message => {
-      if(message.channel.type == "dm") return;
-      
-      if(this.blacklist){
-        if(this.blacklist(message).includes(message.author.id)) return;
-      }
-      
-      let prefix = this.prefix(message)
-      this.commands.forEach(c => {
-        if(!message.content.startsWith(prefix)) return;
-        let cmd = message.content.slice(prefix.length).split(" ")[0]
-        if(cmd == c.name || c.aliases.includes(cmd)){
-          c.run(this,message)
+    this.ext = new Collection()
+    this.on("ready", () => {
+      console.log(this.user.tag + " is ready")
+      this.fetchApplication().then(a => {
+        if(a.owner instanceof User){
+          this.ownerID.push(a.owner.id)
+        }else if(a.owner instanceof Team){
+          a.owner.members.forEach(m => {
+            this.ownerID.push(m.user.id)
+          })
         }
       })
     })
+    
+    this.on("message", message => {
+      this.ext.forEach(ext => {
+        if(ext.onmessage) ext.onmessage(message)
+      })
+        if(!this.prefix) this.prefix = '!'
+        if(!message.content.startsWith(this.prefix)) return;
+        const cmdn = message.content.slice(1).split(" ")[0]
+        this.commands.forEach(cmd => {
+          if(cmd.name == cmdn || cmd.aliases.includes(cmdn)) cmd.run(message)
+        })
+      })
+      
+      this.on("messageUpdate", (oldMessage,newMessage) => {
+        this.ext.forEach(ext => {
+        if(ext.onedit) ext.onedit(oldMessage,newMessage)
+      })
+      })
   }
   
-  addCommand(command){
-    let cmd = {}
-    if(!command.name) throw "Command name?"
-    if(!command.run) throw "Your command do nothing"
-    cmd.name = command.name
-    cmd.description = command.description || "Описание не задано"
-    cmd.aliases = command.aliases || []
-    cmd.run = command.run
-    cmd.category = command.category
-    this.commands.set(cmd.name,cmd)
-    console.log("CC | Command " + cmd.name + " is loaded")
+  load_ext(name){
+    if(!this.dirname) throw 'Missing dirname'
+   let path = this.dirname + '/' + name.split("").map(m => m == '.' ? '/' : m).join("") + ".js"
+   path = require(path)
+   if(path.load) path.load(this)
+   this.ext.set(name,path)
+  }
+  unload_ext(name){
+    if(!this.dirname) throw 'Missing dirname'
+     let pathn = this.dirname + '/' + name.split("").map(m => m == '.' ? '/' : m).join("") + ".js"
+   let path = require(pathn)
+   if(path.unload) path.unload(this)
+   delete require.cache[require.resolve(pathn)]
+   return this.ext.delete(name)
+  }
+  reload_ext(name){
+    if(!this.dirname) throw 'Missing dirname'
+     let pathn = this.dirname + '/' + name.split("").map(m => m == '.' ? '/' : m).join("") + ".js"
+  let path = require(pathn)
+   if(path.unload) path.unload(this)
+   if(path.load) path.load(this)
+  }
+  add_cmd({name, description, aliases, run,hide}){
+    if(!name) throw "No name"
+    if(!description) description = 'Не задано'
+    if(!aliases) aliases = []
+    if(!run) run = message => message.reply("Данная команда ничего не делает ибо в ней забыли прописать 'run'")
+    if(!hide) hide = false;
+    this.commands.set(name,{name, description,aliases,run,hide})
+  }
+  isOwner(user){
+    return this.ownerID.includes(user.id)
   }
   
- 
+  list_cmds(){
+    let l = []
+    this.commands.forEach(cmd => {
+      if(!cmd.hide){
+      l.push({name: cmd.name,description: cmd.description})
+      }
+    })
+    return l;
+  }
 }
-module.exports = ClassClient
